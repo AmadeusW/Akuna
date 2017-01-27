@@ -73,6 +73,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Dispatchers\IControlDispatcher.cs" />
+    <Compile Include="Dispatchers\SendInputDispatcher.cs" />
     <Compile Include="VideoProviders\IVideoProvider.cs" />
     <Compile Include="VideoProviders\Win32VideoProvider.cs" />
     <Page Include="MainWindow.xaml">

@@ -1,4 +1,5 @@
-﻿using Akuna.Sandbox.VideoProviders;
+﻿using Akuna.Sandbox.Dispatchers;
+using Akuna.Sandbox.VideoProviders;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,12 +27,14 @@ namespace Akuna.Sandbox
     public partial class MainWindow : Window
     {
         IVideoProvider _video;
-        IntPtr _handle;
+        IControlDispatcher _dispatcher;
+        bool _working;
 
         public MainWindow()
         {
             InitializeComponent();
             _video = new Win32VideoProvider();
+            _dispatcher = new DelayDispatcher();
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -45,10 +48,10 @@ namespace Akuna.Sandbox
                     {
                         return;
                     }
-                    _video.Attach(process);
-                    // todo this attach
-                    _handle = process.MainWindowHandle;
                     this.Title = _video.WindowTitle;
+                    _video.Attach(process);
+                    _dispatcher.Start();
+                    _working = true;
                 }
                 VideoCanvas.Source = _video.GetVideo();
             }
@@ -57,6 +60,7 @@ namespace Akuna.Sandbox
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             _video?.Detach();
+            _dispatcher.Stop();
             HwndSource source = PresentationSource.FromVisual(this) as HwndSource;
             source.RemoveHook(WndProc);
         }
@@ -71,9 +75,16 @@ namespace Akuna.Sandbox
         // Handle messages. 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
-            PInvoke.User32.WindowMessage wMsg = (PInvoke.User32.WindowMessage)msg;
-            System.Diagnostics.Debug.WriteLine($"{hwnd} \t{wMsg} \t{wParam} \t{lParam}");
+            if (!_working)
+                return IntPtr.Zero;
 
+            PInvoke.User32.WindowMessage wMsg = (PInvoke.User32.WindowMessage)msg;
+            //System.Diagnostics.Debug.WriteLine($"{hwnd} \t{wMsg} \t{wParam} \t{lParam}");
+            /*if (wMsg == PInvoke.User32.WindowMessage.WM_MOUSEMOVE
+                || wMsg == PInvoke.User32.WindowMessage.WM_NCMOUSEMOVE)
+            {*/
+            _dispatcher?.Dispatch(msg);
+            //}
             //var x = new InputSimulator();
             //x.Keyboard.KeyPress(WindowsInput.Native.VirtualKeyCode.SPACE);
 
